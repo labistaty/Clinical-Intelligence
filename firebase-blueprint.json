@@ -1,0 +1,62 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Doctor profile and authentication details",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string" },
+        "joined": { "type": "string" },
+        "avatar": { "type": "string" },
+        "specialization": { "type": "string" },
+        "phone": { "type": "string" },
+        "location": { "type": "string" },
+        "license": { "type": "string" },
+        "bio": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email"]
+    },
+    "PatientRecord": {
+      "title": "Patient Record",
+      "description": "Medical consultation data including diagnosis and vitals",
+      "type": "object",
+      "properties": {
+        "patient": { "type": "string" },
+        "age": { "type": "string" },
+        "contact": { "type": "string" },
+        "notes": { "type": "string" },
+        "diagnosis": { "type": "string" },
+        "confidence": { "type": "string" },
+        "status": { "type": "string" },
+        "icd10": { "type": "string" },
+        "reasoning": { "type": "string" },
+        "doctorId": { "type": "string" },
+        "vitals": {
+          "type": "object",
+          "properties": {
+            "bp": { "type": "string" },
+            "hr": { "type": "string" },
+            "spo2": { "type": "string" },
+            "temp": { "type": "string" }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["patient", "diagnosis", "doctorId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Public and private profile for doctors"
+    },
+    "/records/{recordId}": {
+      "schema": "PatientRecord",
+      "description": "Global patient records stored by doctors"
+    }
+  }
+}

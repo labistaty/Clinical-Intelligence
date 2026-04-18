@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // User Profile Rules
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if false; // Profiles are not listable for security
+      
+      allow create: if isOwner(userId) 
+        && incoming().email == request.auth.token.email
+        && incoming().keys().hasAll(['name', 'email'])
+        && incoming().name is string && incoming().name.size() > 0;
+
+      allow update: if isOwner(userId)
+        && incoming().email == existing().email // Email cannot be changed here
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'name', 'role', 'avatar', 'specialization', 'phone', 'location', 'license', 'bio', 'updatedAt'
+        ]);
+    }
+
+    // Patient Record Rules
+    match /records/{recordId} {
+      // Doctors can only read their own records
+      allow get: if isSignedIn() && existing().doctorId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.doctorId == request.auth.uid;
+
+      allow create: if isSignedIn()
+        && incoming().doctorId == request.auth.uid
+        && incoming().patient is string && incoming().patient.size() > 0
+        && incoming().diagnosis is string
+        && incoming().keys().hasAll(['patient', 'diagnosis', 'doctorId', 'createdAt'])
+        && isValidId(recordId);
+
+      allow update: if isSignedIn()
+        && existing().doctorId == request.auth.uid
+        && incoming().doctorId == existing().doctorId
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'notes', 'vitals']);
+        
+      allow delete: if isSignedIn() && existing().doctorId == request.auth.uid;
+    }
+  }
+}
